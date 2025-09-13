@@ -95,6 +95,15 @@ async function saveSettings(settings) {
 
 async function connectToOBS() {
     try {
+        // Déconnexion propre si déjà connecté
+        if (obs.identified) {
+            try {
+                await obs.disconnect();
+            } catch (e) {
+                // Ignore les erreurs de déconnexion
+            }
+        }
+        
         const settings = await loadSettings();
         const password = settings.obsPassword || '';
         
@@ -110,6 +119,7 @@ async function connectToOBS() {
         if (error.message.includes('authentication')) {
             console.log('💡 Astuce: Il semble que OBS nécessite un mot de passe. Vous pouvez le configurer via l\'interface web.');
         }
+        throw error; // Relancer l'erreur pour le système de reconnexion
     }
 }
 
@@ -256,12 +266,54 @@ async function startServer() {
     });
 }
 
+let reconnectInterval;
+const RECONNECT_DELAY = 5000; // 5 secondes
+
+function startReconnectionAttempts() {
+    if (reconnectInterval) return; // Éviter les multiples tentatives
+    
+    console.log('Démarrage des tentatives de reconnexion...');
+    reconnectInterval = setInterval(async () => {
+        if (!obs.identified) {
+            console.log('Tentative de reconnexion à OBS...');
+            try {
+                await connectToOBS();
+                if (obs.identified) {
+                    console.log('✅ Reconnexion à OBS réussie !');
+                    stopReconnectionAttempts();
+                }
+            } catch (error) {
+                console.log('❌ Tentative de reconnexion échouée, nouvelle tentative dans 5s...');
+            }
+        } else {
+            stopReconnectionAttempts();
+        }
+    }, RECONNECT_DELAY);
+}
+
+function stopReconnectionAttempts() {
+    if (reconnectInterval) {
+        clearInterval(reconnectInterval);
+        reconnectInterval = null;
+        console.log('Arrêt des tentatives de reconnexion');
+    }
+}
+
 obs.on('ConnectionClosed', () => {
-    console.log('Connexion OBS fermée');
+    console.log('Connexion OBS fermée - Démarrage de la reconnexion automatique');
+    startReconnectionAttempts();
 });
 
 obs.on('ConnectionError', (err) => {
     console.error('Erreur de connexion OBS:', err);
+    if (!obs.identified) {
+        startReconnectionAttempts();
+    }
+});
+
+obs.on('Identified', () => {
+    console.log('✅ OBS connecté et identifié');
+    stopReconnectionAttempts();
 });
 
 startServer().catch(console.error);
