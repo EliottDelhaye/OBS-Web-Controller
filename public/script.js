@@ -320,10 +320,16 @@ class OBSController {
             const response = await fetch('/api/obs-status');
             const status = await response.json();
             const statusElement = document.getElementById('obs-status');
-            
+
             if (status.connected) {
                 statusElement.textContent = 'OBS Connecté';
                 statusElement.className = 'status-connected';
+
+                // Si connecté, récupérer la scène actuelle
+                if (status.currentScene) {
+                    this.currentScene = status.currentScene;
+                    this.updateActiveButtons();
+                }
             } else {
                 statusElement.textContent = 'OBS Déconnecté';
                 statusElement.className = 'status-disconnected';

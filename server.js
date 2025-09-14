@@ -320,8 +320,25 @@ app.post('/api/change-scene', async (req, res) => {
     }
 });
 
-app.get('/api/obs-status', (req, res) => {
-    res.json({ connected: obs.identified });
+app.get('/api/obs-status', async (req, res) => {
+    try {
+        const status = { connected: obs.identified };
+
+        if (obs.identified) {
+            // Récupérer la scène actuelle si OBS est connecté
+            try {
+                const sceneResponse = await obs.call('GetCurrentProgramScene');
+                status.currentScene = sceneResponse.sceneName;
+            } catch (error) {
+                console.error('Erreur lors de la récupération de la scène actuelle:', error);
+            }
+        }
+
+        res.json(status);
+    } catch (error) {
+        console.error('Erreur lors de la vérification du statut OBS:', error);
+        res.json({ connected: false });
+    }
 });
 
 app.post('/api/obs-reconnect', async (req, res) => {
