@@ -458,15 +458,12 @@ class OBSController {
         
         sortedCategories.forEach(category => {
             const categoryItem = document.createElement('div');
-            categoryItem.className = 'category-item';
+            categoryItem.className = 'category-item-simple';
             categoryItem.innerHTML = `
-                <div class="category-info">
-                    <div class="category-details">
-                        <h3>${category.name}</h3>
-                        <p>${category.description || 'Aucune description'}</p>
-                    </div>
+                <div class="category-name-simple">
+                    <span class="category-order-number">${category.order}</span>
+                    <span class="category-name-text">${category.name}</span>
                 </div>
-                <div class="category-order-badge">Ordre: ${category.order}</div>
                 <div class="category-actions">
                     <button class="category-action edit" onclick="obsController.editCategory(${category.id})" title="Modifier">✎</button>
                     ${category.id !== 1 ? `<button class="category-action delete" onclick="obsController.deleteCategory(${category.id})" title="Supprimer">×</button>` : ''}
@@ -524,7 +521,6 @@ class OBSController {
         if (category) {
             title.textContent = 'Modifier la catégorie';
             document.getElementById('category-name').value = category.name;
-            document.getElementById('category-description').value = category.description || '';
             document.getElementById('category-order-form').value = category.order;
         } else {
             title.textContent = 'Ajouter une catégorie';
@@ -542,7 +538,6 @@ class OBSController {
         
         const formData = {
             name: document.getElementById('category-name').value,
-            description: document.getElementById('category-description').value,
             order: parseInt(document.getElementById('category-order-form').value) || 1
         };
 

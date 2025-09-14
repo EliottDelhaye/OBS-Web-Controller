@@ -30,8 +30,7 @@ async function initializeDatabase() {
             {
                 id: 1,
                 name: "Général",
-                order: 1,
-                description: "Catégorie générale"
+                order: 1
             }
         ];
         await fs.writeFile(CATEGORIES_FILE, JSON.stringify(initialCategories, null, 2));
@@ -236,7 +235,6 @@ app.post('/api/categories', async (req, res) => {
     const newCategory = {
         id: Math.max(...categories.map(c => c.id || 0), 0) + 1,
         name: req.body.name,
-        description: req.body.description || '',
         order: req.body.order || Math.max(...categories.map(c => c.order || 0), 0) + 1
     };
     categories.push(newCategory);
@@ -259,7 +257,6 @@ app.put('/api/categories/:id', async (req, res) => {
     categories[categoryIndex] = {
         ...categories[categoryIndex],
         name: req.body.name || categories[categoryIndex].name,
-        description: req.body.description !== undefined ? req.body.description : categories[categoryIndex].description,
         order: req.body.order !== undefined ? req.body.order : categories[categoryIndex].order
     };
     

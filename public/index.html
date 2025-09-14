@@ -234,7 +234,7 @@
     <!-- Modal pour ajouter/modifier une catégorie -->
     <div id="category-form-modal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeCategoryFormModal()">&times;</span>
+            <span class="close" onclick="if(obsController) obsController.closeCategoryFormModal()">&times;</span>
             <h2 id="category-form-title">Ajouter une catégorie</h2>
             <form id="category-form">
                 <div class="form-group">
@@ -242,16 +242,12 @@
                     <input type="text" id="category-name" required>
                 </div>
                 <div class="form-group">
-                    <label for="category-description">Description (optionnelle):</label>
-                    <input type="text" id="category-description" placeholder="Description de la catégorie">
-                </div>
-                <div class="form-group">
                     <label for="category-order-form">Ordre d'affichage:</label>
                     <input type="number" id="category-order-form" min="1" placeholder="1" required>
                     <small class="form-help">Plus le nombre est petit, plus la catégorie apparaît en haut</small>
                 </div>
                 <div class="form-actions">
-                    <button type="button" onclick="closeCategoryFormModal()" class="btn-secondary">Annuler</button>
+                    <button type="button" onclick="if(obsController) obsController.closeCategoryFormModal()" class="btn-secondary">Annuler</button>
                     <button type="submit" class="btn-primary">Sauvegarder</button>
                 </div>
             </form>
