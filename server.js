@@ -30,6 +30,8 @@ async function initializeDatabase() {
                 id: 1,
                 name: "Scène principale",
                 category: "Général",
+                categoryOrder: 1,
+                buttonOrder: 1,
                 scene: "Scene",
                 image: "/images/default.svg"
             },
@@ -37,6 +39,8 @@ async function initializeDatabase() {
                 id: 2,
                 name: "Écran partagé",
                 category: "Général",
+                categoryOrder: 1,
+                buttonOrder: 2,
                 scene: "Desktop",
                 image: "/images/default.svg"
             }
@@ -136,6 +140,8 @@ app.post('/api/buttons', async (req, res) => {
         id: Date.now(),
         name: req.body.name,
         category: req.body.category || 'Général',
+        categoryOrder: req.body.categoryOrder || 1,
+        buttonOrder: req.body.buttonOrder || 1,
         scene: req.body.scene,
         image: req.body.image || '/images/default.svg'
     };
@@ -160,6 +166,8 @@ app.put('/api/buttons/:id', async (req, res) => {
         ...buttons[buttonIndex],
         name: req.body.name || buttons[buttonIndex].name,
         category: req.body.category || buttons[buttonIndex].category || 'Général',
+        categoryOrder: req.body.categoryOrder !== undefined ? req.body.categoryOrder : (buttons[buttonIndex].categoryOrder || 1),
+        buttonOrder: req.body.buttonOrder !== undefined ? req.body.buttonOrder : (buttons[buttonIndex].buttonOrder || 1),
         scene: req.body.scene || buttons[buttonIndex].scene,
         image: req.body.image || buttons[buttonIndex].image
     };

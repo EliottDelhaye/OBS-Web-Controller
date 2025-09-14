@@ -58,19 +58,42 @@ class OBSController {
         const grid = document.getElementById('buttons-grid');
         grid.innerHTML = '';
 
-        // Grouper les boutons par catégorie
+        // Grouper les boutons par catégorie avec tri
         const categories = {};
         this.buttons.forEach(button => {
             const category = button.category || 'Général';
             if (!categories[category]) {
-                categories[category] = [];
+                categories[category] = {
+                    buttons: [],
+                    order: button.categoryOrder || 999 // Par défaut à la fin
+                };
             }
-            categories[category].push(button);
+            categories[category].buttons.push(button);
+        });
+
+        // Trier les catégories par ordre, puis par nom
+        const sortedCategories = Object.keys(categories).sort((a, b) => {
+            const orderA = categories[a].order;
+            const orderB = categories[b].order;
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+            return a.localeCompare(b);
         });
 
         // Créer une section pour chaque catégorie
-        Object.keys(categories).sort().forEach(categoryName => {
-            const categorySection = this.createCategorySection(categoryName, categories[categoryName]);
+        sortedCategories.forEach(categoryName => {
+            // Trier les boutons dans chaque catégorie
+            const sortedButtons = categories[categoryName].buttons.sort((a, b) => {
+                const orderA = a.buttonOrder || 999;
+                const orderB = b.buttonOrder || 999;
+                if (orderA !== orderB) {
+                    return orderA - orderB;
+                }
+                return a.name.localeCompare(b.name);
+            });
+            
+            const categorySection = this.createCategorySection(categoryName, sortedButtons);
             grid.appendChild(categorySection);
         });
         
@@ -267,12 +290,16 @@ class OBSController {
             title.textContent = 'Modifier le bouton';
             document.getElementById('button-name').value = button.name;
             document.getElementById('button-category').value = button.category || 'Général';
+            document.getElementById('category-order').value = button.categoryOrder || 1;
+            document.getElementById('button-order').value = button.buttonOrder || 1;
             document.getElementById('scene-name').value = button.scene;
             document.getElementById('button-image').value = button.image;
         } else {
             title.textContent = 'Ajouter un bouton';
             form.reset();
             document.getElementById('button-category').value = 'Général';
+            document.getElementById('category-order').value = 1;
+            document.getElementById('button-order').value = 1;
         }
         
         modal.classList.add('show');
@@ -290,6 +317,8 @@ class OBSController {
         const formData = {
             name: document.getElementById('button-name').value,
             category: document.getElementById('button-category').value || 'Général',
+            categoryOrder: parseInt(document.getElementById('category-order').value) || 1,
+            buttonOrder: parseInt(document.getElementById('button-order').value) || 1,
             scene: document.getElementById('scene-name').value,
             image: document.getElementById('button-image').value || '/images/default.svg'
         };

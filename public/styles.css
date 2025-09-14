@@ -489,6 +489,17 @@ main {
     margin-bottom: 1.5rem;
 }
 
+.form-group-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
 label {
     display: block;
     margin-bottom: 0.5rem;
@@ -496,7 +507,7 @@ label {
     color: #e0e0e0;
 }
 
-input[type="text"] {
+input[type="text"], input[type="number"] {
     width: 100%;
     padding: 0.75rem;
     border: 2px solid #444;
@@ -507,13 +518,13 @@ input[type="text"] {
     transition: border-color 0.3s ease;
 }
 
-input[type="text"]:focus {
+input[type="text"]:focus, input[type="number"]:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-input[type="text"]::placeholder {
+input[type="text"]::placeholder, input[type="number"]::placeholder {
     color: #888;
 }
 
@@ -730,9 +741,14 @@ input[type="password"]::placeholder {
         overflow-y: auto;
     }
     
-    input[type="text"] {
+    input[type="text"], input[type="number"] {
         font-size: 16px; /* Prevent zoom on iOS */
         min-height: 44px;
+    }
+    
+    .form-group-row {
+        flex-direction: column;
+        gap: 0.5rem;
     }
     
     button {
