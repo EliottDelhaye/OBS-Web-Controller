@@ -13,6 +13,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const BUTTONS_FILE = path.join(__dirname, 'data', 'buttons.json');
+const CATEGORIES_FILE = path.join(__dirname, 'data', 'categories.json');
 const SETTINGS_FILE = path.join(__dirname, 'data', 'settings.json');
 
 async function initializeDatabase() {
@@ -23,14 +24,28 @@ async function initializeDatabase() {
     }
 
     try {
+        await fs.access(CATEGORIES_FILE);
+    } catch {
+        const initialCategories = [
+            {
+                id: 1,
+                name: "Général",
+                order: 1,
+                color: "#4ECDC4",
+                description: "Catégorie générale"
+            }
+        ];
+        await fs.writeFile(CATEGORIES_FILE, JSON.stringify(initialCategories, null, 2));
+    }
+
+    try {
         await fs.access(BUTTONS_FILE);
     } catch {
         const initialButtons = [
             {
                 id: 1,
                 name: "Scène principale",
-                category: "Général",
-                categoryOrder: 1,
+                categoryId: 1,
                 buttonOrder: 1,
                 scene: "Scene",
                 image: "/images/default.svg"
@@ -38,8 +53,7 @@ async function initializeDatabase() {
             {
                 id: 2,
                 name: "Écran partagé",
-                category: "Général",
-                categoryOrder: 1,
+                categoryId: 1,
                 buttonOrder: 2,
                 scene: "Desktop",
                 image: "/images/default.svg"
@@ -75,6 +89,26 @@ async function saveButtons(buttons) {
         return true;
     } catch (error) {
         console.error('Erreur lors de la sauvegarde des boutons:', error);
+        return false;
+    }
+}
+
+async function loadCategories() {
+    try {
+        const data = await fs.readFile(CATEGORIES_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('Erreur lors du chargement des catégories:', error);
+        return [];
+    }
+}
+
+async function saveCategories(categories) {
+    try {
+        await fs.writeFile(CATEGORIES_FILE, JSON.stringify(categories, null, 2));
+        return true;
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde des catégories:', error);
         return false;
     }
 }
@@ -139,8 +173,7 @@ app.post('/api/buttons', async (req, res) => {
     const newButton = {
         id: Date.now(),
         name: req.body.name,
-        category: req.body.category || 'Général',
-        categoryOrder: req.body.categoryOrder || 1,
+        categoryId: parseInt(req.body.categoryId) || 1,
         buttonOrder: req.body.buttonOrder || 1,
         scene: req.body.scene,
         image: req.body.image || '/images/default.svg'
@@ -165,8 +198,7 @@ app.put('/api/buttons/:id', async (req, res) => {
     buttons[buttonIndex] = {
         ...buttons[buttonIndex],
         name: req.body.name || buttons[buttonIndex].name,
-        category: req.body.category || buttons[buttonIndex].category || 'Général',
-        categoryOrder: req.body.categoryOrder !== undefined ? req.body.categoryOrder : (buttons[buttonIndex].categoryOrder || 1),
+        categoryId: req.body.categoryId !== undefined ? parseInt(req.body.categoryId) : (buttons[buttonIndex].categoryId || 1),
         buttonOrder: req.body.buttonOrder !== undefined ? req.body.buttonOrder : (buttons[buttonIndex].buttonOrder || 1),
         scene: req.body.scene || buttons[buttonIndex].scene,
         image: req.body.image || buttons[buttonIndex].image
@@ -189,6 +221,85 @@ app.delete('/api/buttons/:id', async (req, res) => {
     
     if (await saveButtons(filteredButtons)) {
         res.json({ message: 'Bouton supprimé avec succès' });
+    } else {
+        res.status(500).json({ error: 'Erreur lors de la sauvegarde' });
+    }
+});
+
+// Routes pour les catégories
+app.get('/api/categories', async (req, res) => {
+    const categories = await loadCategories();
+    res.json(categories);
+});
+
+app.post('/api/categories', async (req, res) => {
+    const categories = await loadCategories();
+    const newCategory = {
+        id: Math.max(...categories.map(c => c.id || 0), 0) + 1,
+        name: req.body.name,
+        description: req.body.description || '',
+        color: req.body.color || '#4ECDC4',
+        order: req.body.order || Math.max(...categories.map(c => c.order || 0), 0) + 1
+    };
+    categories.push(newCategory);
+    
+    if (await saveCategories(categories)) {
+        res.status(201).json(newCategory);
+    } else {
+        res.status(500).json({ error: 'Erreur lors de la sauvegarde' });
+    }
+});
+
+app.put('/api/categories/:id', async (req, res) => {
+    const categories = await loadCategories();
+    const categoryIndex = categories.findIndex(c => c.id === parseInt(req.params.id));
+    
+    if (categoryIndex === -1) {
+        return res.status(404).json({ error: 'Catégorie non trouvée' });
+    }
+    
+    categories[categoryIndex] = {
+        ...categories[categoryIndex],
+        name: req.body.name || categories[categoryIndex].name,
+        description: req.body.description !== undefined ? req.body.description : categories[categoryIndex].description,
+        color: req.body.color || categories[categoryIndex].color,
+        order: req.body.order !== undefined ? req.body.order : categories[categoryIndex].order
+    };
+    
+    if (await saveCategories(categories)) {
+        res.json(categories[categoryIndex]);
+    } else {
+        res.status(500).json({ error: 'Erreur lors de la sauvegarde' });
+    }
+});
+
+app.delete('/api/categories/:id', async (req, res) => {
+    const categoryId = parseInt(req.params.id);
+    
+    // Vérifier qu'il ne s'agit pas de la catégorie "Général" (ID 1)
+    if (categoryId === 1) {
+        return res.status(400).json({ error: 'La catégorie "Général" ne peut pas être supprimée' });
+    }
+    
+    const categories = await loadCategories();
+    const buttons = await loadButtons();
+    
+    // Vérifier qu'aucun bouton n'utilise cette catégorie
+    const buttonsUsingCategory = buttons.filter(b => b.categoryId === categoryId);
+    if (buttonsUsingCategory.length > 0) {
+        return res.status(400).json({ 
+            error: `Impossible de supprimer la catégorie: ${buttonsUsingCategory.length} bouton(s) l'utilisent encore` 
+        });
+    }
+    
+    const filteredCategories = categories.filter(c => c.id !== categoryId);
+    
+    if (filteredCategories.length === categories.length) {
+        return res.status(404).json({ error: 'Catégorie non trouvée' });
+    }
+    
+    if (await saveCategories(filteredCategories)) {
+        res.json({ message: 'Catégorie supprimée avec succès' });
     } else {
         res.status(500).json({ error: 'Erreur lors de la sauvegarde' });
     }

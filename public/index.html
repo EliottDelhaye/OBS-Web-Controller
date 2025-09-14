@@ -114,6 +114,9 @@
         <div class="dropdown-item" onclick="openOBSSettingsModal()">
             <span>Configuration OBS</span>
         </div>
+        <div class="dropdown-item" onclick="openCategoriesModal()">
+            <span>Gérer les catégories</span>
+        </div>
         <div class="dropdown-header" onclick="openAddButtonModal()">
             <span>Boutons existants</span>
             <svg class="add-button-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -143,19 +146,15 @@
                 </div>
                 <div class="form-group">
                     <label for="button-category">Catégorie:</label>
-                    <input type="text" id="button-category" placeholder="Général" required>
+                    <select id="button-category" required>
+                        <option value="">Sélectionner une catégorie...</option>
+                        <!-- Les catégories seront chargées dynamiquement -->
+                    </select>
                 </div>
-                <div class="form-group-row">
-                    <div class="form-group">
-                        <label for="category-order">Ordre de la catégorie:</label>
-                        <input type="number" id="category-order" min="1" placeholder="1">
-                        <small class="form-help">Plus le nombre est petit, plus la catégorie apparaît en haut</small>
-                    </div>
-                    <div class="form-group">
-                        <label for="button-order">Ordre du bouton:</label>
-                        <input type="number" id="button-order" min="1" placeholder="1">
-                        <small class="form-help">Ordre dans la catégorie</small>
-                    </div>
+                <div class="form-group">
+                    <label for="button-order">Ordre du bouton dans la catégorie:</label>
+                    <input type="number" id="button-order" min="1" placeholder="1" required>
+                    <small class="form-help">Plus le nombre est petit, plus le bouton apparaît à gauche</small>
                 </div>
                 <div class="form-group">
                     <label for="scene-name">Nom de la scène OBS:</label>
@@ -208,6 +207,56 @@
                 <div class="form-actions">
                     <button type="button" onclick="closeOBSSettingsModal()" class="btn-secondary">Annuler</button>
                     <button type="submit" class="btn-primary">Sauvegarder et reconnecter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal pour gérer les catégories -->
+    <div id="categories-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCategoriesModal()">&times;</span>
+            <h2>Gérer les catégories</h2>
+            <div class="categories-actions">
+                <button class="btn-primary" onclick="openAddCategoryModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 8px;">
+                        <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Ajouter une catégorie
+                </button>
+            </div>
+            <div id="categories-list" class="categories-list">
+                <!-- Les catégories seront ajoutées ici dynamiquement -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour ajouter/modifier une catégorie -->
+    <div id="category-form-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCategoryFormModal()">&times;</span>
+            <h2 id="category-form-title">Ajouter une catégorie</h2>
+            <form id="category-form">
+                <div class="form-group">
+                    <label for="category-name">Nom de la catégorie:</label>
+                    <input type="text" id="category-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="category-description">Description (optionnelle):</label>
+                    <input type="text" id="category-description" placeholder="Description de la catégorie">
+                </div>
+                <div class="form-group">
+                    <label for="category-color">Couleur:</label>
+                    <input type="color" id="category-color" value="#4ECDC4">
+                </div>
+                <div class="form-group">
+                    <label for="category-order-form">Ordre d'affichage:</label>
+                    <input type="number" id="category-order-form" min="1" placeholder="1" required>
+                    <small class="form-help">Plus le nombre est petit, plus la catégorie apparaît en haut</small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" onclick="closeCategoryFormModal()" class="btn-secondary">Annuler</button>
+                    <button type="submit" class="btn-primary">Sauvegarder</button>
                 </div>
             </form>
         </div>

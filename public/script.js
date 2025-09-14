@@ -1,12 +1,15 @@
 class OBSController {
     constructor() {
         this.buttons = [];
+        this.categories = [];
         this.currentEditingButton = null;
+        this.currentEditingCategory = null;
         this.init();
     }
 
     async init() {
         this.bindEvents();
+        await this.loadCategories();
         await this.loadButtons();
         await this.loadSettings();
         await this.checkOBSStatus();
@@ -37,6 +40,51 @@ class OBSController {
         }
     }
 
+    async loadCategories() {
+        try {
+            const response = await fetch('/api/categories');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            this.categories = await response.json();
+            this.updateCategorySelect();
+        } catch (error) {
+            console.error('Erreur lors du chargement des catégories:', error);
+        }
+    }
+
+    updateCategorySelect() {
+        const select = document.getElementById('button-category');
+        if (!select) return;
+        
+        // Garder la valeur sélectionnée
+        const currentValue = select.value;
+        
+        // Vider les options existantes sauf la première
+        select.innerHTML = '<option value="">Sélectionner une catégorie...</option>';
+        
+        // Trier les catégories par ordre
+        const sortedCategories = this.categories.sort((a, b) => {
+            if (a.order !== b.order) {
+                return a.order - b.order;
+            }
+            return a.name.localeCompare(b.name);
+        });
+        
+        // Ajouter les options
+        sortedCategories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = category.name;
+            select.appendChild(option);
+        });
+        
+        // Remettre la valeur sélectionnée si elle existe encore
+        if (currentValue && sortedCategories.find(c => c.id == currentValue)) {
+            select.value = currentValue;
+        }
+    }
+
     async loadButtons() {
         try {
             const response = await fetch('/api/buttons');
@@ -59,32 +107,29 @@ class OBSController {
         grid.innerHTML = '';
 
         // Grouper les boutons par catégorie avec tri
-        const categories = {};
+        const categoryGroups = {};
         this.buttons.forEach(button => {
-            const category = button.category || 'Général';
-            if (!categories[category]) {
-                categories[category] = {
-                    buttons: [],
-                    order: button.categoryOrder || 999 // Par défaut à la fin
-                };
+            const categoryId = button.categoryId || 1; // Par défaut catégorie Général
+            if (!categoryGroups[categoryId]) {
+                categoryGroups[categoryId] = [];
             }
-            categories[category].buttons.push(button);
+            categoryGroups[categoryId].push(button);
         });
 
-        // Trier les catégories par ordre, puis par nom
-        const sortedCategories = Object.keys(categories).sort((a, b) => {
-            const orderA = categories[a].order;
-            const orderB = categories[b].order;
-            if (orderA !== orderB) {
-                return orderA - orderB;
-            }
-            return a.localeCompare(b);
-        });
+        // Trier les catégories par ordre
+        const sortedCategories = this.categories
+            .filter(cat => categoryGroups[cat.id]) // Seulement les catégories qui ont des boutons
+            .sort((a, b) => {
+                if (a.order !== b.order) {
+                    return a.order - b.order;
+                }
+                return a.name.localeCompare(b.name);
+            });
 
         // Créer une section pour chaque catégorie
-        sortedCategories.forEach(categoryName => {
+        sortedCategories.forEach(category => {
             // Trier les boutons dans chaque catégorie
-            const sortedButtons = categories[categoryName].buttons.sort((a, b) => {
+            const sortedButtons = categoryGroups[category.id].sort((a, b) => {
                 const orderA = a.buttonOrder || 999;
                 const orderB = b.buttonOrder || 999;
                 if (orderA !== orderB) {
@@ -93,7 +138,7 @@ class OBSController {
                 return a.name.localeCompare(b.name);
             });
             
-            const categorySection = this.createCategorySection(categoryName, sortedButtons);
+            const categorySection = this.createCategorySection(category, sortedButtons);
             grid.appendChild(categorySection);
         });
         
@@ -107,12 +152,15 @@ class OBSController {
         buttonsList.innerHTML = '';
 
         this.buttons.forEach(button => {
+            const category = this.categories.find(c => c.id === button.categoryId);
+            const categoryName = category ? category.name : 'Général';
+            
             const buttonItem = document.createElement('div');
             buttonItem.className = 'dropdown-item button-item';
             buttonItem.innerHTML = `
                 <div class="button-item-info">
                     <span class="button-item-name">${button.name}</span>
-                    <span class="button-item-category">${button.category || 'Général'}</span>
+                    <span class="button-item-category">${categoryName}</span>
                 </div>
                 <div class="button-item-actions">
                     <button class="button-action edit" data-button-id="${button.id}" title="Modifier">✎</button>
@@ -142,13 +190,14 @@ class OBSController {
         });
     }
 
-    createCategorySection(categoryName, buttons) {
+    createCategorySection(category, buttons) {
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'category-section';
         
         const categoryHeader = document.createElement('h2');
         categoryHeader.className = 'category-header';
-        categoryHeader.textContent = categoryName;
+        categoryHeader.textContent = category.name;
+        categoryHeader.style.borderBottomColor = category.color;
         categoryDiv.appendChild(categoryHeader);
         
         const buttonsContainer = document.createElement('div');
@@ -289,16 +338,14 @@ class OBSController {
         if (button) {
             title.textContent = 'Modifier le bouton';
             document.getElementById('button-name').value = button.name;
-            document.getElementById('button-category').value = button.category || 'Général';
-            document.getElementById('category-order').value = button.categoryOrder || 1;
+            document.getElementById('button-category').value = button.categoryId || 1;
             document.getElementById('button-order').value = button.buttonOrder || 1;
             document.getElementById('scene-name').value = button.scene;
             document.getElementById('button-image').value = button.image;
         } else {
             title.textContent = 'Ajouter un bouton';
             form.reset();
-            document.getElementById('button-category').value = 'Général';
-            document.getElementById('category-order').value = 1;
+            document.getElementById('button-category').value = 1;
             document.getElementById('button-order').value = 1;
         }
         
@@ -316,8 +363,7 @@ class OBSController {
         
         const formData = {
             name: document.getElementById('button-name').value,
-            category: document.getElementById('button-category').value || 'Général',
-            categoryOrder: parseInt(document.getElementById('category-order').value) || 1,
+            categoryId: parseInt(document.getElementById('button-category').value) || 1,
             buttonOrder: parseInt(document.getElementById('button-order').value) || 1,
             scene: document.getElementById('scene-name').value,
             image: document.getElementById('button-image').value || '/images/default.svg'
@@ -394,6 +440,159 @@ class OBSController {
 
     showError(message) {
         this.showNotification(message, 'error');
+    }
+
+    // Fonctions pour la gestion des catégories
+    async loadCategoriesList() {
+        const categoriesList = document.getElementById('categories-list');
+        if (!categoriesList) return;
+        
+        categoriesList.innerHTML = '';
+        
+        // Trier les catégories par ordre
+        const sortedCategories = this.categories.sort((a, b) => {
+            if (a.order !== b.order) {
+                return a.order - b.order;
+            }
+            return a.name.localeCompare(b.name);
+        });
+        
+        sortedCategories.forEach(category => {
+            const categoryItem = document.createElement('div');
+            categoryItem.className = 'category-item';
+            categoryItem.style.borderLeftColor = category.color;
+            categoryItem.innerHTML = `
+                <div class="category-info">
+                    <div class="category-color-indicator" style="background-color: ${category.color}"></div>
+                    <div class="category-details">
+                        <h3>${category.name}</h3>
+                        <p>${category.description || 'Aucune description'}</p>
+                    </div>
+                </div>
+                <div class="category-order-badge">Ordre: ${category.order}</div>
+                <div class="category-actions">
+                    <button class="category-action edit" onclick="obsController.editCategory(${category.id})" title="Modifier">✎</button>
+                    ${category.id !== 1 ? `<button class="category-action delete" onclick="obsController.deleteCategory(${category.id})" title="Supprimer">×</button>` : ''}
+                </div>
+            `;
+            categoriesList.appendChild(categoryItem);
+        });
+    }
+
+    async editCategory(categoryId) {
+        const category = this.categories.find(c => c.id === categoryId);
+        if (!category) return;
+        
+        this.currentEditingCategory = category;
+        this.openCategoryFormModal(category);
+    }
+
+    async deleteCategory(categoryId) {
+        if (categoryId === 1) {
+            this.showError('La catégorie "Général" ne peut pas être supprimée');
+            return;
+        }
+        
+        if (!confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?\\nTous les boutons de cette catégorie devront être déplacés vers une autre catégorie.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/categories/${categoryId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                await this.loadCategories();
+                await this.loadButtons(); // Recharger les boutons au cas où
+                this.loadCategoriesList();
+                this.showSuccess('Catégorie supprimée avec succès');
+            } else {
+                const error = await response.json();
+                this.showError(error.error || 'Erreur lors de la suppression');
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            this.showError('Erreur de connexion au serveur');
+        }
+    }
+
+    openCategoryFormModal(category = null) {
+        const modal = document.getElementById('category-form-modal');
+        const title = document.getElementById('category-form-title');
+        const form = document.getElementById('category-form');
+        
+        this.currentEditingCategory = category;
+        
+        if (category) {
+            title.textContent = 'Modifier la catégorie';
+            document.getElementById('category-name').value = category.name;
+            document.getElementById('category-description').value = category.description || '';
+            document.getElementById('category-color').value = category.color;
+            document.getElementById('category-order-form').value = category.order;
+        } else {
+            title.textContent = 'Ajouter une catégorie';
+            form.reset();
+            // Trouver le prochain ordre disponible
+            const maxOrder = Math.max(...this.categories.map(c => c.order), 0);
+            document.getElementById('category-order-form').value = maxOrder + 1;
+            document.getElementById('category-color').value = '#4ECDC4';
+        }
+        
+        modal.classList.add('show');
+    }
+
+    async handleCategoryFormSubmit(e) {
+        e.preventDefault();
+        
+        const formData = {
+            name: document.getElementById('category-name').value,
+            description: document.getElementById('category-description').value,
+            color: document.getElementById('category-color').value,
+            order: parseInt(document.getElementById('category-order-form').value) || 1
+        };
+
+        try {
+            let response;
+            
+            if (this.currentEditingCategory) {
+                response = await fetch(`/api/categories/${this.currentEditingCategory.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+            } else {
+                response = await fetch('/api/categories', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+            }
+
+            if (response.ok) {
+                await this.loadCategories();
+                await this.loadButtons(); // Recharger pour mettre à jour l'affichage
+                this.loadCategoriesList();
+                this.closeCategoryFormModal();
+                this.showSuccess(this.currentEditingCategory ? 'Catégorie modifiée avec succès' : 'Catégorie ajoutée avec succès');
+            } else {
+                const error = await response.json();
+                this.showError(error.error || 'Erreur lors de la sauvegarde');
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            this.showError('Erreur de connexion au serveur');
+        }
+    }
+
+    closeCategoryFormModal() {
+        const modal = document.getElementById('category-form-modal');
+        modal.classList.remove('show');
+        this.currentEditingCategory = null;
     }
 
     showNotification(message, type) {
@@ -504,6 +703,25 @@ function closeOBSSettingsModal() {
     document.getElementById('obs-settings-modal').classList.remove('show');
 }
 
+// Fonctions globales pour la gestion des catégories
+function openCategoriesModal() {
+    if (obsController) {
+        obsController.loadCategoriesList();
+        document.getElementById('categories-modal').classList.add('show');
+        closeSettingsMenu();
+    }
+}
+
+function closeCategoriesModal() {
+    document.getElementById('categories-modal').classList.remove('show');
+}
+
+function openAddCategoryModal() {
+    if (obsController) {
+        obsController.openCategoryFormModal();
+    }
+}
+
 // Fonctions globales pour la gestion du titre
 function editTitle() {
     const currentTitle = document.getElementById('app-title').textContent;
@@ -595,6 +813,13 @@ document.getElementById('obs-settings-form').addEventListener('submit', async (e
     }
 });
 
+// Gestion du formulaire de catégorie
+document.getElementById('category-form').addEventListener('submit', (e) => {
+    if (obsController) {
+        obsController.handleCategoryFormSubmit(e);
+    }
+});
+
 // Fermer les modals en cliquant à côté
 window.addEventListener('click', (e) => {
     if (e.target === document.getElementById('title-modal')) {
@@ -602,6 +827,12 @@ window.addEventListener('click', (e) => {
     }
     if (e.target === document.getElementById('obs-settings-modal')) {
         closeOBSSettingsModal();
+    }
+    if (e.target === document.getElementById('categories-modal')) {
+        closeCategoriesModal();
+    }
+    if (e.target === document.getElementById('category-form-modal')) {
+        obsController.closeCategoryFormModal();
     }
 });
 
