@@ -922,6 +922,37 @@ input[type="password"]::placeholder {
     }
 }
 
+/* Active scene styles */
+.scene-button.active-scene {
+    border: 4px solid #4CAF50 !important;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.6) !important;
+    background: linear-gradient(45deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.08)) !important;
+}
+
+.favorite-button.active-scene {
+    border: 4px solid #4CAF50 !important;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.6) !important;
+}
+
+.scene-button.active-scene::before,
+.favorite-button.active-scene::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    border-radius: 12px;
+    z-index: -1;
+    animation: activePulse 2s infinite;
+}
+
+@keyframes activePulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+}
+
 /* Force critical menu styles - MUST BE AT END */
 .settings-dropdown.show,
 #settings-dropdown.show {
@@ -1034,4 +1065,22 @@ input[type="password"]::placeholder {
 /* Masquer la sidebar si pas de favoris */
 .favorites-sidebar:empty {
     display: none;
+}
+
+/* Copyright footer */
+.copyright {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.copyright p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #ffffff;
+    text-align: center;
+    opacity: 0.7;
 }

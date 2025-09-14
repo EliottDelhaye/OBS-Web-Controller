@@ -77,7 +77,7 @@ async function initializeDatabase() {
                 categoryId: 1,
                 buttonOrder: 1,
                 scene: "Scene",
-                image: "/images/default.svg"
+                image: "/images/default.png"
             },
             {
                 id: 2,
@@ -85,7 +85,7 @@ async function initializeDatabase() {
                 categoryId: 1,
                 buttonOrder: 2,
                 scene: "Desktop",
-                image: "/images/default.svg"
+                image: "/images/default.png"
             }
         ];
         await fs.writeFile(BUTTONS_FILE, JSON.stringify(initialButtons, null, 2));
@@ -236,7 +236,7 @@ app.post('/api/buttons', async (req, res) => {
         categoryId: parseInt(req.body.categoryId) || 1,
         buttonOrder: req.body.buttonOrder || 1,
         scene: req.body.scene,
-        image: req.body.image || '/images/default.svg',
+        image: req.body.image || '/images/default.png',
         favorite: req.body.favorite || false
     };
     buttons.push(newButton);

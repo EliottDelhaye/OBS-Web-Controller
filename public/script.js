@@ -237,8 +237,9 @@ class OBSController {
     createButtonElement(button) {
         const buttonDiv = document.createElement('div');
         buttonDiv.className = 'scene-button';
+        buttonDiv.setAttribute('data-scene', button.scene);
         buttonDiv.innerHTML = `
-            <img src="${button.image}" alt="${button.name}" class="button-image" onerror="this.src='/images/default.svg'">
+            <img src="${button.image}" alt="${button.name}" class="button-image" onerror="this.src='/images/default.png'">
             <div class="button-overlay">
                 <div class="button-name">${button.name}</div>
                 ${button.favorite ? '<div class="favorite-indicator">★</div>' : ''}
@@ -319,11 +320,11 @@ class OBSController {
         if ('ontouchstart' in window) {
             return;
         }
-        
+
         const buttons = document.querySelectorAll('.scene-button');
         buttons.forEach(button => {
-            const sceneText = button.querySelector('.button-scene').textContent;
-            if (sceneText.includes(sceneName)) {
+            const nameElement = button.querySelector('.button-name');
+            if (nameElement && nameElement.textContent.includes(sceneName)) {
                 button.style.animation = 'flash 0.5s ease-in-out';
                 setTimeout(() => {
                     button.style.animation = '';
@@ -398,7 +399,7 @@ class OBSController {
             categoryId: parseInt(document.getElementById('button-category').value) || 1,
             buttonOrder: parseInt(document.getElementById('button-order').value) || 1,
             scene: document.getElementById('scene-name').value,
-            image: document.getElementById('button-image').value || '/images/default.svg',
+            image: document.getElementById('button-image').value || '/images/default.png',
             favorite: document.getElementById('button-favorite').checked
         };
 
@@ -696,7 +697,8 @@ class OBSController {
                 // Mettre en valeur dans la liste principale
                 const buttonElements = document.querySelectorAll('.scene-button');
                 buttonElements.forEach(buttonElement => {
-                    const buttonScene = buttonElement.querySelector('.button-scene')?.textContent?.replace('Scène: ', '');
+                    // Utiliser l'attribut data-scene pour une comparaison précise
+                    const buttonScene = buttonElement.getAttribute('data-scene');
 
                     if (buttonScene === this.currentScene) {
                         buttonElement.classList.add('active-scene');
@@ -759,7 +761,7 @@ class OBSController {
         const preview = document.getElementById('image-preview');
         const previewImg = document.getElementById('preview-img');
 
-        if (imageUrl && imageUrl !== '/images/default.svg') {
+        if (imageUrl && imageUrl !== '/images/default.png') {
             previewImg.src = imageUrl;
             preview.style.display = 'block';
         } else {
@@ -768,7 +770,7 @@ class OBSController {
     }
 
     clearImage() {
-        document.getElementById('button-image').value = '/images/default.svg';
+        document.getElementById('button-image').value = '/images/default.png';
         document.getElementById('image-preview').style.display = 'none';
         document.getElementById('button-image-file').value = '';
     }
@@ -821,35 +823,6 @@ style.textContent = `
         to { transform: translateX(100%); opacity: 0; }
     }
 
-    .scene-button.active-scene {
-        border: 4px solid #4CAF50 !important;
-        box-shadow: 0 0 20px rgba(76, 175, 80, 0.6) !important;
-        background: linear-gradient(45deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.08)) !important;
-    }
-
-    .favorite-button.active-scene {
-        border: 4px solid #4CAF50 !important;
-        box-shadow: 0 0 20px rgba(76, 175, 80, 0.6) !important;
-    }
-
-    .scene-button.active-scene::before,
-    .favorite-button.active-scene::before {
-        content: '';
-        position: absolute;
-        top: -4px;
-        left: -4px;
-        right: -4px;
-        bottom: -4px;
-        background: linear-gradient(45deg, #4CAF50, #45a049);
-        border-radius: inherit;
-        z-index: -1;
-        animation: activePulse 2s infinite;
-    }
-
-    @keyframes activePulse {
-        0%, 100% { opacity: 0.3; }
-        50% { opacity: 0.6; }
-    }
 `;
 document.head.appendChild(style);
 

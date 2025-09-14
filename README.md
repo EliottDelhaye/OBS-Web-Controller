@@ -191,7 +191,7 @@ obs-controller/
     ├── styles.css         # Styles CSS
     ├── script.js          # Logique JavaScript
     └── images/            # Dossier des images
-        └── default.svg    # Image par défaut
+        └── default.png    # Image par défaut
 ```
 
 ## 🔧 API REST
