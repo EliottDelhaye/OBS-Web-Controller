@@ -31,7 +31,6 @@ async function initializeDatabase() {
                 id: 1,
                 name: "Général",
                 order: 1,
-                color: "#4ECDC4",
                 description: "Catégorie générale"
             }
         ];
@@ -238,7 +237,6 @@ app.post('/api/categories', async (req, res) => {
         id: Math.max(...categories.map(c => c.id || 0), 0) + 1,
         name: req.body.name,
         description: req.body.description || '',
-        color: req.body.color || '#4ECDC4',
         order: req.body.order || Math.max(...categories.map(c => c.order || 0), 0) + 1
     };
     categories.push(newCategory);
@@ -262,7 +260,6 @@ app.put('/api/categories/:id', async (req, res) => {
         ...categories[categoryIndex],
         name: req.body.name || categories[categoryIndex].name,
         description: req.body.description !== undefined ? req.body.description : categories[categoryIndex].description,
-        color: req.body.color || categories[categoryIndex].color,
         order: req.body.order !== undefined ? req.body.order : categories[categoryIndex].order
     };
     

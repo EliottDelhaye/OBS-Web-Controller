@@ -197,7 +197,6 @@ class OBSController {
         const categoryHeader = document.createElement('h2');
         categoryHeader.className = 'category-header';
         categoryHeader.textContent = category.name;
-        categoryHeader.style.borderBottomColor = category.color;
         categoryDiv.appendChild(categoryHeader);
         
         const buttonsContainer = document.createElement('div');
@@ -460,10 +459,8 @@ class OBSController {
         sortedCategories.forEach(category => {
             const categoryItem = document.createElement('div');
             categoryItem.className = 'category-item';
-            categoryItem.style.borderLeftColor = category.color;
             categoryItem.innerHTML = `
                 <div class="category-info">
-                    <div class="category-color-indicator" style="background-color: ${category.color}"></div>
                     <div class="category-details">
                         <h3>${category.name}</h3>
                         <p>${category.description || 'Aucune description'}</p>
@@ -528,7 +525,6 @@ class OBSController {
             title.textContent = 'Modifier la catégorie';
             document.getElementById('category-name').value = category.name;
             document.getElementById('category-description').value = category.description || '';
-            document.getElementById('category-color').value = category.color;
             document.getElementById('category-order-form').value = category.order;
         } else {
             title.textContent = 'Ajouter une catégorie';
@@ -536,7 +532,6 @@ class OBSController {
             // Trouver le prochain ordre disponible
             const maxOrder = Math.max(...this.categories.map(c => c.order), 0);
             document.getElementById('category-order-form').value = maxOrder + 1;
-            document.getElementById('category-color').value = '#4ECDC4';
         }
         
         modal.classList.add('show');
@@ -548,7 +543,6 @@ class OBSController {
         const formData = {
             name: document.getElementById('category-name').value,
             description: document.getElementById('category-description').value,
-            color: document.getElementById('category-color').value,
             order: parseInt(document.getElementById('category-order-form').value) || 1
         };
 
