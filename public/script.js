@@ -39,13 +39,11 @@ class OBSController {
 
     async loadButtons() {
         try {
-            // Ajouter un timestamp pour éviter le cache
-            const response = await fetch('/api/buttons?t=' + Date.now());
+            const response = await fetch('/api/buttons');
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
             this.buttons = await response.json();
-            console.log('Loaded buttons:', this.buttons);
             this.renderButtons();
         } catch (error) {
             console.error('Erreur lors du chargement des boutons:', error);
@@ -71,7 +69,6 @@ class OBSController {
         });
 
         // Créer une section pour chaque catégorie
-        console.log('Categories grouped:', categories);
         Object.keys(categories).sort().forEach(categoryName => {
             const categorySection = this.createCategorySection(categoryName, categories[categoryName]);
             grid.appendChild(categorySection);
@@ -296,11 +293,6 @@ class OBSController {
             scene: document.getElementById('scene-name').value,
             image: document.getElementById('button-image').value || '/images/default.svg'
         };
-
-        console.log('FormData being sent:', formData);
-        if (this.currentEditingButton) {
-            console.log('Editing button:', this.currentEditingButton);
-        }
 
         try {
             let response;
