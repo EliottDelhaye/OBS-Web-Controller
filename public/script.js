@@ -58,9 +58,20 @@ class OBSController {
         const grid = document.getElementById('buttons-grid');
         grid.innerHTML = '';
 
+        // Grouper les boutons par catégorie
+        const categories = {};
         this.buttons.forEach(button => {
-            const buttonElement = this.createButtonElement(button);
-            grid.appendChild(buttonElement);
+            const category = button.category || 'Général';
+            if (!categories[category]) {
+                categories[category] = [];
+            }
+            categories[category].push(button);
+        });
+
+        // Créer une section pour chaque catégorie
+        Object.keys(categories).sort().forEach(categoryName => {
+            const categorySection = this.createCategorySection(categoryName, categories[categoryName]);
+            grid.appendChild(categorySection);
         });
         
         this.updateButtonsList();
@@ -76,7 +87,10 @@ class OBSController {
             const buttonItem = document.createElement('div');
             buttonItem.className = 'dropdown-item button-item';
             buttonItem.innerHTML = `
-                <span class="button-item-name">${button.name}</span>
+                <div class="button-item-info">
+                    <span class="button-item-name">${button.name}</span>
+                    <span class="button-item-category">${button.category || 'Général'}</span>
+                </div>
                 <div class="button-item-actions">
                     <button class="button-action edit" data-button-id="${button.id}" title="Modifier">✎</button>
                     <button class="button-action delete" data-button-id="${button.id}" title="Supprimer">×</button>
@@ -103,6 +117,27 @@ class OBSController {
                 closeSettingsMenu();
             });
         });
+    }
+
+    createCategorySection(categoryName, buttons) {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'category-section';
+        
+        const categoryHeader = document.createElement('h2');
+        categoryHeader.className = 'category-header';
+        categoryHeader.textContent = categoryName;
+        categoryDiv.appendChild(categoryHeader);
+        
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'category-buttons';
+        
+        buttons.forEach(button => {
+            const buttonElement = this.createButtonElement(button);
+            buttonsContainer.appendChild(buttonElement);
+        });
+        
+        categoryDiv.appendChild(buttonsContainer);
+        return categoryDiv;
     }
 
     createButtonElement(button) {
@@ -231,11 +266,13 @@ class OBSController {
         if (button) {
             title.textContent = 'Modifier le bouton';
             document.getElementById('button-name').value = button.name;
+            document.getElementById('button-category').value = button.category || 'Général';
             document.getElementById('scene-name').value = button.scene;
             document.getElementById('button-image').value = button.image;
         } else {
             title.textContent = 'Ajouter un bouton';
             form.reset();
+            document.getElementById('button-category').value = 'Général';
         }
         
         modal.classList.add('show');
@@ -252,6 +289,7 @@ class OBSController {
         
         const formData = {
             name: document.getElementById('button-name').value,
+            category: document.getElementById('button-category').value || 'Général',
             scene: document.getElementById('scene-name').value,
             image: document.getElementById('button-image').value || '/images/default.svg'
         };
@@ -609,6 +647,31 @@ function refreshApp() {
     if (navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
         window.location.reload();
+    }
+}
+
+// Fonction pour rafraîchir la page
+function refreshPage() {
+    if (obsController) {
+        const refreshButton = document.getElementById('refresh-btn');
+        
+        // Animation de rotation du bouton
+        refreshButton.style.transform = 'rotate(360deg)';
+        refreshButton.style.transition = 'transform 0.5s ease';
+        
+        // Recharger toutes les données
+        Promise.all([
+            obsController.loadButtons(),
+            obsController.loadSettings(),
+            obsController.checkOBSStatus()
+        ]).finally(() => {
+            // Remettre le bouton à sa position initiale après l'animation
+            setTimeout(() => {
+                refreshButton.style.transform = '';
+                refreshButton.style.transition = '';
+            }, 500);
+        });
+        
     }
 }
 

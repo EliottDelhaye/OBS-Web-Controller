@@ -41,9 +41,38 @@ h1 {
     gap: 1rem;
 }
 
+.status-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 /* Menu Settings */
 .settings-menu {
     position: relative;
+}
+
+.refresh-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.refresh-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.refresh-button:active {
+    transform: scale(0.95);
 }
 
 .settings-button {
@@ -179,14 +208,30 @@ h1 {
     margin: 8px 0;
 }
 
-.button-item-name {
+.button-item-info {
+    display: flex;
+    flex-direction: column;
     flex: 1;
+    overflow: hidden;
+}
+
+.button-item-name {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-weight: 500;
     font-size: 14px;
     color: #e0e0e0;
+    margin-bottom: 4px;
+}
+
+.button-item-category {
+    font-size: 12px;
+    color: #999;
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .button-item-actions {
@@ -293,24 +338,45 @@ main {
 }
 
 .buttons-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.category-section {
+    margin-bottom: 1.5rem;
+}
+
+.category-header {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #e0e0e0;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.category-buttons {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 1.5rem;
-    max-width: 1200px;
-    margin: 0 auto;
 }
 
 .scene-button {
     position: relative;
     width: 100%;
-    height: 200px;
+    height: 90px;
     border: none;
     border-radius: 15px;
     overflow: hidden;
     cursor: pointer;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
     background: #000000;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(111, 111, 111, 0.3);
     transition: box-shadow 0.2s ease;
     -webkit-tap-highlight-color: transparent;
     z-index: 1;
@@ -348,29 +414,20 @@ main {
 
 .button-overlay {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.9));
-    color: white;
-    padding: 1.2rem 1rem 1rem;
-    text-align: center;
-    border-radius: 0 0 15px 15px;
-}
-
-.button-overlay::before {
-    content: '';
-    position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    backdrop-filter: blur(8px);
-    mask: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,1) 100%);
-    -webkit-mask: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 30%, rgba(0,0,0,1) 100%);
-    border-radius: 0 0 15px 15px;
-    z-index: -1;
+    background: rgba(0, 0, 0, 0.4);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-radius: 15px;
 }
+
 
 .button-name {
     font-size: 1.1rem;
@@ -596,14 +653,24 @@ input[type="password"]::placeholder {
     }
     
     .buttons-grid {
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 1rem;
+        gap: 1.5rem;
         padding: 0 1rem;
     }
     
+    .category-buttons {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .category-header {
+        font-size: 1.2rem;
+        margin-bottom: 0.75rem;
+    }
+    
     .scene-button {
-        height: 150px;
+        height: 80px;
         min-height: 44px; /* iOS minimum touch target */
+        border: 1px solid rgba(111, 111, 111, 0.3) !important;
     }
     
     h1 {
@@ -655,7 +722,6 @@ input[type="password"]::placeholder {
         height: 44px;
         font-size: 15px;
     }
-}
     
     .modal-content {
         margin: 0;
