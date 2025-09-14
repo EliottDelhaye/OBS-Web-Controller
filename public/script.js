@@ -223,7 +223,6 @@ class OBSController {
             <img src="${button.image}" alt="${button.name}" class="button-image" onerror="this.src='/images/default.svg'">
             <div class="button-overlay">
                 <div class="button-name">${button.name}</div>
-                <div class="button-scene">Scène: ${button.scene}</div>
                 ${button.favorite ? '<div class="favorite-indicator">★</div>' : ''}
             </div>
         `;
