@@ -29,12 +29,14 @@ async function initializeDatabase() {
             {
                 id: 1,
                 name: "Scène principale",
+                category: "Général",
                 scene: "Scene",
                 image: "/images/default.svg"
             },
             {
                 id: 2,
                 name: "Écran partagé",
+                category: "Général",
                 scene: "Desktop",
                 image: "/images/default.svg"
             }
@@ -133,6 +135,7 @@ app.post('/api/buttons', async (req, res) => {
     const newButton = {
         id: Date.now(),
         name: req.body.name,
+        category: req.body.category || 'Général',
         scene: req.body.scene,
         image: req.body.image || '/images/default.svg'
     };
@@ -156,6 +159,7 @@ app.put('/api/buttons/:id', async (req, res) => {
     buttons[buttonIndex] = {
         ...buttons[buttonIndex],
         name: req.body.name || buttons[buttonIndex].name,
+        category: req.body.category || buttons[buttonIndex].category || 'Général',
         scene: req.body.scene || buttons[buttonIndex].scene,
         image: req.body.image || buttons[buttonIndex].image
     };
