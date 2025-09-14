@@ -4,6 +4,8 @@ class OBSController {
         this.categories = [];
         this.currentEditingButton = null;
         this.currentEditingCategory = null;
+        this.currentScene = null;
+        this.eventSource = null;
         this.init();
     }
 
@@ -13,7 +15,8 @@ class OBSController {
         await this.loadButtons();
         await this.loadSettings();
         await this.checkOBSStatus();
-        
+        this.connectToEventStream();
+
         setInterval(() => this.checkOBSStatus(), 5000);
     }
 
@@ -93,6 +96,7 @@ class OBSController {
             }
             this.buttons = await response.json();
             this.renderButtons();
+            this.renderFavorites();
         } catch (error) {
             console.error('Erreur lors du chargement des boutons:', error);
             // Ne pas afficher l'erreur lors du premier chargement car le serveur peut ne pas être prêt
@@ -141,8 +145,9 @@ class OBSController {
             const categorySection = this.createCategorySection(category, sortedButtons);
             grid.appendChild(categorySection);
         });
-        
+
         this.updateButtonsList();
+        this.renderFavorites();
     }
 
     updateButtonsList() {
@@ -219,6 +224,7 @@ class OBSController {
             <div class="button-overlay">
                 <div class="button-name">${button.name}</div>
                 <div class="button-scene">Scène: ${button.scene}</div>
+                ${button.favorite ? '<div class="favorite-indicator">★</div>' : ''}
             </div>
         `;
 
@@ -341,11 +347,13 @@ class OBSController {
             document.getElementById('button-order').value = button.buttonOrder || 1;
             document.getElementById('scene-name').value = button.scene;
             document.getElementById('button-image').value = button.image;
+            document.getElementById('button-favorite').checked = button.favorite || false;
         } else {
             title.textContent = 'Ajouter un bouton';
             form.reset();
             document.getElementById('button-category').value = 1;
             document.getElementById('button-order').value = 1;
+            document.getElementById('button-favorite').checked = false;
         }
         
         modal.classList.add('show');
@@ -365,7 +373,8 @@ class OBSController {
             categoryId: parseInt(document.getElementById('button-category').value) || 1,
             buttonOrder: parseInt(document.getElementById('button-order').value) || 1,
             scene: document.getElementById('scene-name').value,
-            image: document.getElementById('button-image').value || '/images/default.svg'
+            image: document.getElementById('button-image').value || '/images/default.svg',
+            favorite: document.getElementById('button-favorite').checked
         };
 
         try {
@@ -439,6 +448,30 @@ class OBSController {
 
     showError(message) {
         this.showNotification(message, 'error');
+    }
+
+    renderFavorites() {
+        const sidebar = document.getElementById('favorites-sidebar');
+        if (!sidebar) return;
+
+        sidebar.innerHTML = '';
+
+        const favoriteButtons = this.buttons.filter(button => button.favorite);
+
+        favoriteButtons.forEach(button => {
+            const favoriteDiv = document.createElement('div');
+            favoriteDiv.className = 'favorite-button';
+            favoriteDiv.style.backgroundImage = `url(${button.image})`;
+            favoriteDiv.title = button.name;
+            favoriteDiv.setAttribute('data-scene', button.scene);
+
+            // Ajouter les événements de clic
+            favoriteDiv.addEventListener('click', () => {
+                this.changeScene(button.scene);
+            });
+
+            sidebar.appendChild(favoriteDiv);
+        });
     }
 
     // Fonctions pour la gestion des catégories
@@ -584,6 +617,82 @@ class OBSController {
         this.currentEditingCategory = null;
     }
 
+    connectToEventStream() {
+        // Fermer la connexion existante si elle existe
+        if (this.eventSource) {
+            this.eventSource.close();
+        }
+
+        this.eventSource = new EventSource('/api/events');
+
+        this.eventSource.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'sceneChanged') {
+                    this.handleSceneChanged(data.sceneName);
+                }
+            } catch (error) {
+                console.error('Erreur lors du parsing de l\'événement SSE:', error);
+            }
+        };
+
+        this.eventSource.onerror = (error) => {
+            console.error('Erreur EventSource:', error);
+            // Reconnexion automatique après 5 secondes
+            setTimeout(() => {
+                this.connectToEventStream();
+            }, 5000);
+        };
+
+        this.eventSource.onopen = () => {
+            console.log('Connexion aux événements OBS établie');
+        };
+    }
+
+    handleSceneChanged(sceneName) {
+        console.log('Scène changée vers:', sceneName);
+        this.currentScene = sceneName;
+        this.updateActiveButtons();
+    }
+
+    updateActiveButtons() {
+        // Supprimer la classe active de tous les boutons (principaux et favoris)
+        document.querySelectorAll('.scene-button').forEach(button => {
+            button.classList.remove('active-scene');
+        });
+        document.querySelectorAll('.favorite-button').forEach(button => {
+            button.classList.remove('active-scene');
+        });
+
+        // Trouver et mettre en valeur le bouton de la scène active
+        if (this.currentScene) {
+            const activeButton = this.buttons.find(button => button.scene === this.currentScene);
+            if (activeButton) {
+                // Mettre en valeur dans la liste principale
+                const buttonElements = document.querySelectorAll('.scene-button');
+                buttonElements.forEach(buttonElement => {
+                    const buttonScene = buttonElement.querySelector('.button-scene')?.textContent?.replace('Scène: ', '');
+
+                    if (buttonScene === this.currentScene) {
+                        buttonElement.classList.add('active-scene');
+                    }
+                });
+
+                // Mettre en valeur dans la liste des favoris si c'est un favori
+                if (activeButton.favorite) {
+                    const favoriteElements = document.querySelectorAll('.favorite-button');
+                    favoriteElements.forEach(favoriteElement => {
+                        const favoriteScene = favoriteElement.getAttribute('data-scene');
+
+                        if (favoriteScene === this.currentScene) {
+                            favoriteElement.classList.add('active-scene');
+                        }
+                    });
+                }
+            }
+        }
+    }
+
     showNotification(message, type) {
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
@@ -621,15 +730,45 @@ style.textContent = `
         0%, 100% { transform: scale(1); }
         50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(33, 150, 243, 0.6); }
     }
-    
+
     @keyframes slideIn {
         from { transform: translateX(100%); opacity: 0; }
         to { transform: translateX(0); opacity: 1; }
     }
-    
+
     @keyframes slideOut {
         from { transform: translateX(0); opacity: 1; }
         to { transform: translateX(100%); opacity: 0; }
+    }
+
+    .scene-button.active-scene {
+        border: 4px solid #4CAF50 !important;
+        box-shadow: 0 0 20px rgba(76, 175, 80, 0.6) !important;
+        background: linear-gradient(45deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.08)) !important;
+    }
+
+    .favorite-button.active-scene {
+        border: 4px solid #4CAF50 !important;
+        box-shadow: 0 0 20px rgba(76, 175, 80, 0.6) !important;
+    }
+
+    .scene-button.active-scene::before,
+    .favorite-button.active-scene::before {
+        content: '';
+        position: absolute;
+        top: -4px;
+        left: -4px;
+        right: -4px;
+        bottom: -4px;
+        background: linear-gradient(45deg, #4CAF50, #45a049);
+        border-radius: inherit;
+        z-index: -1;
+        animation: activePulse 2s infinite;
+    }
+
+    @keyframes activePulse {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 0.6; }
     }
 `;
 document.head.appendChild(style);

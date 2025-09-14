@@ -128,6 +128,11 @@
         </div>
     </div>
 
+    <!-- Sidebar des favoris -->
+    <div id="favorites-sidebar" class="favorites-sidebar">
+        <!-- Les boutons favoris seront ajoutés dynamiquement ici -->
+    </div>
+
     <main>
         <div id="buttons-grid" class="buttons-grid">
             <!-- Les boutons seront ajoutés dynamiquement ici -->
@@ -163,6 +168,13 @@
                 <div class="form-group">
                     <label for="button-image">URL de l'image:</label>
                     <input type="text" id="button-image" placeholder="/images/example.svg">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="button-favorite">
+                        <span class="checkbox-label">Bouton favori</span>
+                    </label>
+                    <small class="form-help">Les boutons favoris apparaissent dans la barre latérale</small>
                 </div>
                 <div class="form-actions">
                     <button type="button" id="cancel-btn" class="btn-secondary">Annuler</button>

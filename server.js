@@ -8,6 +8,9 @@ const app = express();
 const PORT = 3000;
 const obs = new OBSWebSocket();
 
+// Variables pour Server-Sent Events
+let sseClients = [];
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
@@ -174,7 +177,8 @@ app.post('/api/buttons', async (req, res) => {
         categoryId: parseInt(req.body.categoryId) || 1,
         buttonOrder: req.body.buttonOrder || 1,
         scene: req.body.scene,
-        image: req.body.image || '/images/default.svg'
+        image: req.body.image || '/images/default.svg',
+        favorite: req.body.favorite || false
     };
     buttons.push(newButton);
     
@@ -199,7 +203,8 @@ app.put('/api/buttons/:id', async (req, res) => {
         categoryId: req.body.categoryId !== undefined ? parseInt(req.body.categoryId) : (buttons[buttonIndex].categoryId || 1),
         buttonOrder: req.body.buttonOrder !== undefined ? req.body.buttonOrder : (buttons[buttonIndex].buttonOrder || 1),
         scene: req.body.scene || buttons[buttonIndex].scene,
-        image: req.body.image || buttons[buttonIndex].image
+        image: req.body.image || buttons[buttonIndex].image,
+        favorite: req.body.favorite !== undefined ? req.body.favorite : (buttons[buttonIndex].favorite || false)
     };
     
     if (await saveButtons(buttons)) {
@@ -338,6 +343,48 @@ app.post('/api/obs-reconnect', async (req, res) => {
     }
 });
 
+// Endpoint pour Server-Sent Events
+app.get('/api/events', (req, res) => {
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    // Ajouter le client à la liste
+    const clientId = Date.now();
+    const client = {
+        id: clientId,
+        response: res
+    };
+    sseClients.push(client);
+
+    // Envoyer un message de confirmation
+    res.write(`data: ${JSON.stringify({ type: 'connected', clientId })}\n\n`);
+
+    // Nettoyer quand le client se déconnecte
+    req.on('close', () => {
+        sseClients = sseClients.filter(client => client.id !== clientId);
+        console.log(`Client SSE ${clientId} déconnecté`);
+    });
+});
+
+// Fonction pour envoyer des événements à tous les clients SSE
+function broadcastToSSEClients(data) {
+    const message = `data: ${JSON.stringify(data)}\n\n`;
+    sseClients = sseClients.filter(client => {
+        try {
+            client.response.write(message);
+            return true;
+        } catch (err) {
+            console.log('Client SSE déconnecté (erreur écriture)');
+            return false;
+        }
+    });
+}
+
 app.get('/api/settings', async (req, res) => {
     const settings = await loadSettings();
     res.json(settings);
@@ -431,6 +478,15 @@ obs.on('ConnectionError', (err) => {
 obs.on('Identified', () => {
     console.log('✅ OBS connecté et identifié');
     stopReconnectionAttempts();
+});
+
+// Écouter les changements de scène pour les broadcaster via SSE
+obs.on('CurrentProgramSceneChanged', (data) => {
+    console.log(`Scène changée vers: ${data.sceneName}`);
+    broadcastToSSEClients({
+        type: 'sceneChanged',
+        sceneName: data.sceneName
+    });
 });
 
 startServer().catch(console.error);
