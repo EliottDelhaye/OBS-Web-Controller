@@ -166,8 +166,19 @@
                     <input type="text" id="scene-name" required>
                 </div>
                 <div class="form-group">
-                    <label for="button-image">URL de l'image:</label>
-                    <input type="text" id="button-image" placeholder="/images/example.svg">
+                    <label for="button-image">Image du bouton:</label>
+                    <div class="image-input-container">
+                        <input type="text" id="button-image" placeholder="/images/example.svg">
+                        <div class="image-input-buttons">
+                            <input type="file" id="button-image-file" accept="image/*" style="display: none;">
+                            <button type="button" id="upload-image-btn" class="btn-secondary">Importer</button>
+                            <button type="button" id="clear-image-btn" class="btn-secondary">Effacer</button>
+                        </div>
+                    </div>
+                    <div id="image-preview" class="image-preview" style="display: none;">
+                        <img id="preview-img" alt="Aperçu de l'image" style="max-width: 100px; max-height: 100px; border-radius: 8px;">
+                    </div>
+                    <small class="form-help">Importez une image ou saisissez une URL</small>
                 </div>
                 <div class="form-group">
                     <label>

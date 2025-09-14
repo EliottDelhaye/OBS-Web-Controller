@@ -24,7 +24,25 @@ class OBSController {
         document.querySelector('.close').addEventListener('click', () => this.closeModal());
         document.getElementById('cancel-btn').addEventListener('click', () => this.closeModal());
         document.getElementById('button-form').addEventListener('submit', (e) => this.handleFormSubmit(e));
-        
+
+        // Gestion de l'upload d'image
+        document.getElementById('upload-image-btn').addEventListener('click', () => {
+            document.getElementById('button-image-file').click();
+        });
+
+        document.getElementById('button-image-file').addEventListener('change', (e) => {
+            this.handleImageUpload(e);
+        });
+
+        document.getElementById('clear-image-btn').addEventListener('click', () => {
+            this.clearImage();
+        });
+
+        // Mise à jour de la prévisualisation lors de la saisie manuelle
+        document.getElementById('button-image').addEventListener('input', (e) => {
+            this.updateImagePreview(e.target.value);
+        });
+
         window.addEventListener('click', (e) => {
             if (e.target === document.getElementById('modal')) {
                 this.closeModal();
@@ -342,9 +360,9 @@ class OBSController {
         const modal = document.getElementById('modal');
         const title = document.getElementById('modal-title');
         const form = document.getElementById('button-form');
-        
+
         this.currentEditingButton = button;
-        
+
         if (button) {
             title.textContent = 'Modifier le bouton';
             document.getElementById('button-name').value = button.name;
@@ -353,14 +371,16 @@ class OBSController {
             document.getElementById('scene-name').value = button.scene;
             document.getElementById('button-image').value = button.image;
             document.getElementById('button-favorite').checked = button.favorite || false;
+            this.updateImagePreview(button.image);
         } else {
             title.textContent = 'Ajouter un bouton';
             form.reset();
             document.getElementById('button-category').value = 1;
             document.getElementById('button-order').value = 1;
             document.getElementById('button-favorite').checked = false;
+            this.clearImage();
         }
-        
+
         modal.classList.add('show');
     }
 
@@ -696,6 +716,61 @@ class OBSController {
                 }
             }
         }
+    }
+
+    async handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const uploadBtn = document.getElementById('upload-image-btn');
+        const originalText = uploadBtn.textContent;
+        uploadBtn.textContent = 'Upload...';
+        uploadBtn.disabled = true;
+
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const response = await fetch('/api/upload-image', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                document.getElementById('button-image').value = result.imageUrl;
+                this.updateImagePreview(result.imageUrl);
+                this.showSuccess(`Image "${result.originalName}" uploadée avec succès`);
+            } else {
+                const error = await response.json();
+                this.showError(error.error || 'Erreur lors de l\'upload');
+            }
+        } catch (error) {
+            console.error('Erreur lors de l\'upload:', error);
+            this.showError('Erreur de connexion lors de l\'upload');
+        } finally {
+            uploadBtn.textContent = originalText;
+            uploadBtn.disabled = false;
+            event.target.value = '';
+        }
+    }
+
+    updateImagePreview(imageUrl) {
+        const preview = document.getElementById('image-preview');
+        const previewImg = document.getElementById('preview-img');
+
+        if (imageUrl && imageUrl !== '/images/default.svg') {
+            previewImg.src = imageUrl;
+            preview.style.display = 'block';
+        } else {
+            preview.style.display = 'none';
+        }
+    }
+
+    clearImage() {
+        document.getElementById('button-image').value = '/images/default.svg';
+        document.getElementById('image-preview').style.display = 'none';
+        document.getElementById('button-image-file').value = '';
     }
 
     showNotification(message, type) {

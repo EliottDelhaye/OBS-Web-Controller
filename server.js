@@ -3,6 +3,7 @@ const cors = require('cors');
 const OBSWebSocket = require('obs-websocket-js').default;
 const fs = require('fs').promises;
 const path = require('path');
+const multer = require('multer');
 
 const app = express();
 const PORT = 3000;
@@ -14,6 +15,33 @@ let sseClients = [];
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
+
+// Configuration multer pour l'upload d'images
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, path.join(__dirname, 'public', 'images'))
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname);
+        cb(null, 'upload-' + uniqueSuffix + ext);
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB maximum
+    },
+    fileFilter: function (req, file, cb) {
+        // Accepter seulement les images
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Seuls les fichiers image sont acceptés!'), false);
+        }
+    }
+});
 
 const BUTTONS_FILE = path.join(__dirname, 'data', 'buttons.json');
 const CATEGORIES_FILE = path.join(__dirname, 'data', 'categories.json');
@@ -163,6 +191,37 @@ async function connectToOBS() {
         throw error; // Relancer l'erreur pour le système de reconnexion
     }
 }
+
+// Endpoint pour l'upload d'images
+app.post('/api/upload-image', (req, res) => {
+    const uploadSingle = upload.single('image');
+
+    uploadSingle(req, res, (err) => {
+        if (err) {
+            console.error('Erreur multer:', err);
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ error: 'Le fichier est trop volumineux (max 5MB)' });
+            }
+            return res.status(400).json({ error: err.message });
+        }
+
+        try {
+            if (!req.file) {
+                return res.status(400).json({ error: 'Aucun fichier fourni' });
+            }
+
+            const imageUrl = `/images/${req.file.filename}`;
+            res.json({
+                imageUrl: imageUrl,
+                filename: req.file.filename,
+                originalName: req.file.originalname
+            });
+        } catch (error) {
+            console.error('Erreur lors de l\'upload:', error);
+            res.status(500).json({ error: 'Erreur lors de l\'upload de l\'image' });
+        }
+    });
+});
 
 app.get('/api/buttons', async (req, res) => {
     const buttons = await loadButtons();
