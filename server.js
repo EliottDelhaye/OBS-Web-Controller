@@ -102,65 +102,34 @@ async function initializeDatabase() {
     }
 }
 
-async function loadButtons() {
-    try {
-        const data = await fs.readFile(BUTTONS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('Erreur lors du chargement des boutons:', error);
-        return [];
+class DataManager {
+    static async load(filePath, defaultValue = []) {
+        try {
+            const data = await fs.readFile(filePath, 'utf8');
+            return JSON.parse(data);
+        } catch (error) {
+            console.error(`Erreur lors du chargement de ${filePath}:`, error);
+            return defaultValue;
+        }
+    }
+
+    static async save(filePath, data) {
+        try {
+            await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+            return true;
+        } catch (error) {
+            console.error(`Erreur lors de la sauvegarde de ${filePath}:`, error);
+            return false;
+        }
     }
 }
 
-async function saveButtons(buttons) {
-    try {
-        await fs.writeFile(BUTTONS_FILE, JSON.stringify(buttons, null, 2));
-        return true;
-    } catch (error) {
-        console.error('Erreur lors de la sauvegarde des boutons:', error);
-        return false;
-    }
-}
-
-async function loadCategories() {
-    try {
-        const data = await fs.readFile(CATEGORIES_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('Erreur lors du chargement des catégories:', error);
-        return [];
-    }
-}
-
-async function saveCategories(categories) {
-    try {
-        await fs.writeFile(CATEGORIES_FILE, JSON.stringify(categories, null, 2));
-        return true;
-    } catch (error) {
-        console.error('Erreur lors de la sauvegarde des catégories:', error);
-        return false;
-    }
-}
-
-async function loadSettings() {
-    try {
-        const data = await fs.readFile(SETTINGS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('Erreur lors du chargement des paramètres:', error);
-        return { appTitle: "OBS Controller", obsPassword: "" };
-    }
-}
-
-async function saveSettings(settings) {
-    try {
-        await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2));
-        return true;
-    } catch (error) {
-        console.error('Erreur lors de la sauvegarde des paramètres:', error);
-        return false;
-    }
-}
+const loadButtons = () => DataManager.load(BUTTONS_FILE, []);
+const saveButtons = (buttons) => DataManager.save(BUTTONS_FILE, buttons);
+const loadCategories = () => DataManager.load(CATEGORIES_FILE, []);
+const saveCategories = (categories) => DataManager.save(CATEGORIES_FILE, categories);
+const loadSettings = () => DataManager.load(SETTINGS_FILE, { appTitle: "OBS Controller", obsPassword: "" });
+const saveSettings = (settings) => DataManager.save(SETTINGS_FILE, settings);
 
 async function connectToOBS() {
     try {

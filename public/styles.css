@@ -1,8 +1,28 @@
+:root {
+    --primary-bg: #1a1a2e;
+    --secondary-bg: #16213e;
+    --accent-color: #667eea;
+    --accent-hover: #5a73e7;
+    --success-color: #4CAF50;
+    --text-color: #ffffff;
+    --text-secondary: #e0e0e0;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --border-radius: 12px;
+    --border-radius-button: 25px;
+    --transition: all 0.3s ease;
+    --transition-fast: all 0.1s ease;
+    --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --box-shadow-hover: 0 8px 25px rgba(102, 126, 234, 0.4);
+    --spacing-sm: 0.75rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+}
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    /* Désactive le délai de 300ms sur tous les éléments */
     touch-action: manipulation;
 }
 
@@ -299,33 +319,32 @@ h1 {
     color: white;
 }
 
-.btn-primary {
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    color: white;
+.btn-primary,
+.btn-secondary {
     border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 25px;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--border-radius-button);
     cursor: pointer;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: var(--transition);
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, var(--accent-color), #764ba2);
+    color: var(--text-color);
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
 .btn-primary:hover {
-    background: linear-gradient(45deg, #5a73e7, #6d42a0);
+    background: linear-gradient(45deg, var(--accent-hover), #6d42a0);
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    box-shadow: var(--box-shadow-hover);
 }
 
 .btn-secondary {
     background: #424242;
-    color: #e0e0e0;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 0.75rem 1.5rem;
-    border-radius: 25px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.3s ease;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
@@ -345,12 +364,8 @@ main {
     margin: 0 auto;
 }
 
-.category-section {
-    margin-bottom: 1.5rem;
-}
-
 .category-header {
-    font-size: 1.5rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: #e0e0e0;
     margin-bottom: 1rem;
@@ -813,7 +828,7 @@ input[type="password"]::placeholder {
     }
     
     .category-header {
-        font-size: 1.2rem;
+        font-size: 1rem;
         margin-bottom: 0.75rem;
     }
     

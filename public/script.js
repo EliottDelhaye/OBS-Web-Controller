@@ -21,26 +21,21 @@ class OBSController {
     }
 
     bindEvents() {
-        document.querySelector('.close').addEventListener('click', () => this.closeModal());
-        document.getElementById('cancel-btn').addEventListener('click', () => this.closeModal());
-        document.getElementById('button-form').addEventListener('submit', (e) => this.handleFormSubmit(e));
+        const eventBindings = [
+            ['.close', 'click', () => this.closeModal()],
+            ['#cancel-btn', 'click', () => this.closeModal()],
+            ['#button-form', 'submit', (e) => this.handleFormSubmit(e)],
+            ['#upload-image-btn', 'click', () => document.getElementById('button-image-file').click()],
+            ['#button-image-file', 'change', (e) => this.handleImageUpload(e)],
+            ['#clear-image-btn', 'click', () => this.clearImage()],
+            ['#button-image', 'input', (e) => this.updateImagePreview(e.target.value)]
+        ];
 
-        // Gestion de l'upload d'image
-        document.getElementById('upload-image-btn').addEventListener('click', () => {
-            document.getElementById('button-image-file').click();
-        });
-
-        document.getElementById('button-image-file').addEventListener('change', (e) => {
-            this.handleImageUpload(e);
-        });
-
-        document.getElementById('clear-image-btn').addEventListener('click', () => {
-            this.clearImage();
-        });
-
-        // Mise à jour de la prévisualisation lors de la saisie manuelle
-        document.getElementById('button-image').addEventListener('input', (e) => {
-            this.updateImagePreview(e.target.value);
+        eventBindings.forEach(([selector, event, handler]) => {
+            const element = selector.startsWith('#') || selector.startsWith('.')
+                ? document.querySelector(selector)
+                : document.getElementById(selector);
+            if (element) element.addEventListener(event, handler);
         });
 
         window.addEventListener('click', (e) => {
@@ -235,6 +230,12 @@ class OBSController {
     }
 
     createButtonElement(button) {
+        const buttonDiv = this.createButtonStructure(button);
+        this.addButtonInteractions(buttonDiv, button);
+        return buttonDiv;
+    }
+
+    createButtonStructure(button) {
         const buttonDiv = document.createElement('div');
         buttonDiv.className = 'scene-button';
         buttonDiv.setAttribute('data-scene', button.scene);
@@ -245,51 +246,55 @@ class OBSController {
                 ${button.favorite ? '<div class="favorite-indicator">★</div>' : ''}
             </div>
         `;
+        return buttonDiv;
+    }
 
-        // Optimisation tactile pour iOS
+    addButtonInteractions(buttonDiv, button) {
+        if ('ontouchstart' in window) {
+            this.addTouchInteractions(buttonDiv, button);
+        } else {
+            this.addClickInteractions(buttonDiv, button);
+        }
+    }
+
+    addTouchInteractions(buttonDiv, button) {
         let touchStartTime = 0;
         let touchMoved = false;
-        
+
         buttonDiv.addEventListener('touchstart', (e) => {
+            if (this.isActionButton(e.target)) return;
             touchStartTime = Date.now();
             touchMoved = false;
-            
-            if (!e.target.classList.contains('btn-edit') && !e.target.classList.contains('btn-delete')) {
-                buttonDiv.style.transform = 'scale(0.95)';
-                buttonDiv.style.transition = 'transform 0.1s ease';
-            }
+            buttonDiv.style.transform = 'scale(0.95)';
+            buttonDiv.style.transition = 'transform 0.1s ease';
         }, { passive: true });
-        
+
         buttonDiv.addEventListener('touchmove', () => {
             touchMoved = true;
             buttonDiv.style.transform = '';
         }, { passive: true });
-        
-        buttonDiv.addEventListener('touchend', (e) => {
-            e.preventDefault(); // Empêche le délai de 300ms d'iOS
-            
-            buttonDiv.style.transform = '';
-            
-            const touchDuration = Date.now() - touchStartTime;
-            
-            if (!touchMoved && touchDuration < 500 && 
-                !e.target.classList.contains('btn-edit') && 
-                !e.target.classList.contains('btn-delete')) {
-                
-                this.changeScene(button.scene);
-            }
-        });
-        
-        // Fallback pour les navigateurs desktop
-        buttonDiv.addEventListener('click', (e) => {
-            if (!('ontouchstart' in window) && 
-                !e.target.classList.contains('btn-edit') && 
-                !e.target.classList.contains('btn-delete')) {
-                this.changeScene(button.scene);
-            }
-        });
 
-        return buttonDiv;
+        buttonDiv.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            buttonDiv.style.transform = '';
+
+            const touchDuration = Date.now() - touchStartTime;
+            if (!touchMoved && touchDuration < 500 && !this.isActionButton(e.target)) {
+                this.changeScene(button.scene);
+            }
+        });
+    }
+
+    addClickInteractions(buttonDiv, button) {
+        buttonDiv.addEventListener('click', (e) => {
+            if (!this.isActionButton(e.target)) {
+                this.changeScene(button.scene);
+            }
+        });
+    }
+
+    isActionButton(target) {
+        return target.classList.contains('btn-edit') || target.classList.contains('btn-delete');
     }
 
     async changeScene(sceneName) {
@@ -1048,15 +1053,6 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// PWA Install Prompt - Désactivé
-window.addEventListener('beforeinstallprompt', (e) => {
-    console.log('PWA: Install prompt available (but hidden)');
-    e.preventDefault();
-});
-
-window.addEventListener('appinstalled', () => {
-    console.log('PWA: App installed successfully');
-});
 
 function showUpdateAvailable() {
     const updateDiv = document.createElement('div');
